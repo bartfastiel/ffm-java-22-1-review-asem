@@ -1,0 +1,44 @@
+name: Backend analyse
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - backend/**
+    types: [ opened, synchronize, reopened ]
+jobs:
+  build:
+    name: Build and analyze
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 19
+        uses: actions/setup-java@v1
+        with:
+          java-version: 19
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY}}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY}}
+          AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+          AWS_TEST_BUCKET_NAME: ${{ secrets.AWS_TEST_BUCKET_NAME }}
+          CLIENT_BASE_URL: ${{ secrets.CLIENT_BASE_URL }}
+        working-directory: backend
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=asem259_el-shop_backend
